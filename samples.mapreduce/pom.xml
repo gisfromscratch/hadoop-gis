@@ -36,6 +36,11 @@
 			<artifactId>hadoop-hdfs</artifactId>
 			<version>2.7.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.gdal</groupId>
+			<artifactId>gdal</artifactId>
+			<version>1.11.2</version>
+		</dependency>
 
 	</dependencies>
 </project>
