@@ -26,7 +26,7 @@ public class App {
 	private static final Log logger = LogFactory.getLog(App.class);
 	private static final String ShapeFileExtenstion = ".shp";
 	
-	private static void readShapefile() {
+	private static void readShapefile() {		
 		logger.info("Registering gdal drivers...");
 		gdal.AllRegister();
 		logger.info("Registering ogr drivers...");
@@ -42,22 +42,30 @@ public class App {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		Configuration configuration = new Configuration();
-		Job job = Job.getInstance(configuration);
-		FileSystem fileSystem = FileSystem.get(configuration);
-		logger.info("Reading HDFS content...");
+//		Configuration configuration = new Configuration();
+//		Job job = Job.getInstance(configuration);
+//		FileSystem fileSystem = FileSystem.get(configuration);
+//		logger.info("Reading HDFS content...");
+//		
+//		Path rootPath = new Path("/");
+//		boolean isRoot = rootPath.isRoot();
+//		logger.info(String.format("Path: '%s' root: '%b'", rootPath.toString(), isRoot));
+//		
+//		RemoteIterator<LocatedFileStatus> files = fileSystem.listFiles(rootPath, true);
+//		while (files.hasNext()) {
+//			LocatedFileStatus file = files.next();
+//			Path filePath = file.getPath();
+//			logger.info(String.format("Path: '%s'", filePath));
+//		}
 		
-		Path rootPath = new Path("/");
-		boolean isRoot = rootPath.isRoot();
-		logger.info(String.format("Path: '%s' root: '%b'", rootPath.toString(), isRoot));
-		
-		RemoteIterator<LocatedFileStatus> files = fileSystem.listFiles(rootPath, true);
-		while (files.hasNext()) {
-			LocatedFileStatus file = files.next();
-			Path filePath = file.getPath();
-			logger.info(String.format("Path: '%s'", filePath));
+		logger.info(String.format("java.library.path='%s'", System.getProperty("java.library.path")));
+		logger.info(String.format("LD_LIBRARY_PATH='%s'", System.getProperty("LD_LIBRARY_PATH")));
+		logger.info(String.format("LD_LIBRARY_PATH from environment='%s'", System.getenv("LD_LIBRARY_PATH")));
+		if (null == System.getProperty("LD_LIBRARY_PATH")) {
+			System.setProperty("LD_LIBRARY_PATH", "/usr/lib64");
+			logger.info("Updated LD_LIBRARY_PATH");
+			logger.info(String.format("LD_LIBRARY_PATH='%s'", System.getProperty("LD_LIBRARY_PATH")));
 		}
-		
 		readShapefile();
 		logger.info("Done...");
 	}
