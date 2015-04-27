@@ -17,7 +17,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
  * @author Jan Tschada
  *
  */
-public class WellKnownTextFileInputFormat extends FileInputFormat<LongWritable, BytesWritable> {
+public class WellKnownTextFileInputFormat extends FileInputFormat<LongWritable, ShapeWritable> {
 
 	private final Log logger;
 	
@@ -26,7 +26,7 @@ public class WellKnownTextFileInputFormat extends FileInputFormat<LongWritable, 
 	}
 	
 	@Override
-	public RecordReader<LongWritable, BytesWritable> createRecordReader(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
+	public RecordReader<LongWritable, ShapeWritable> createRecordReader(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
 		return new WellKnownTextRecordReader();
 	}
 

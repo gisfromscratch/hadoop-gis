@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -21,10 +20,10 @@ import com.esri.core.geometry.GeometryEngine;
  * @author Jan Tschada
  *
  */
-public class WellKnownTextRecordReader extends RecordReader<LongWritable, BytesWritable> {
+public class WellKnownTextRecordReader extends RecordReader<LongWritable, ShapeWritable> {
 
 	private LineRecordReader lineRecordReader;
-	private BytesWritable bytes;
+	private ShapeWritable shape;
 	
 	private final Log logger;
 	
@@ -48,7 +47,7 @@ public class WellKnownTextRecordReader extends RecordReader<LongWritable, BytesW
 		if (line.startsWith("POINT")) {
 			try {
 				Geometry geometry = GeometryEngine.geometryFromWkt(line, 0, Type.Point);
-				bytes = new BytesWritable(GeometryEngine.geometryToEsriShape(geometry));
+				shape = new ShapeWritable(geometry);
 			} catch (Exception ex) {
 				logger.error("Converting the well known text failed!", ex);
 			}
@@ -62,8 +61,8 @@ public class WellKnownTextRecordReader extends RecordReader<LongWritable, BytesW
 	}
 
 	@Override
-	public BytesWritable getCurrentValue() throws IOException, InterruptedException {
-		return bytes;
+	public ShapeWritable getCurrentValue() throws IOException, InterruptedException {
+		return shape;
 	}
 	
 	@Override
