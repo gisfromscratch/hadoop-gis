@@ -27,7 +27,7 @@ public class App {
 		
 		FileInputFormat.setInputPaths(inputJob, "/input/custom-input");
 		UUID uniqueId = UUID.randomUUID();
-		FileOutputFormat.setOutputPath(inputJob, new Path("/ouput", uniqueId.toString()));
+		FileOutputFormat.setOutputPath(inputJob, new Path("/output", uniqueId.toString()));
 		System.exit(inputJob.waitForCompletion(true) ? 0 : 1);
 	}
 }
