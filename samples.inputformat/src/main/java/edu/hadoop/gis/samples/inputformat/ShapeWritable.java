@@ -25,6 +25,8 @@ public class ShapeWritable implements Writable {
 	private IntWritable geometryType;
 	private IntWritable bytesLength;
 	private BytesWritable shape;
+	
+	private final static int DefaultWkt = 0;
 
 	private final Log logger;
 
@@ -92,5 +94,18 @@ public class ShapeWritable implements Writable {
 			}
 		}
 		return null;
+	}
+	
+	@Override
+	public String toString() {
+		Geometry geometry = getGeometry();
+		if (null != geometry) {
+			try {
+				return GeometryEngine.geometryToWkt(geometry, DefaultWkt);
+			} catch (Exception ex) {
+				logger.error("Converting the geometry failed!");
+			}
+		}
+		return "NULL";
 	}
 }
