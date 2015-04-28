@@ -53,7 +53,14 @@ public class WellKnownTextRecordReader extends RecordReader<LongWritable, ShapeW
 			try {
 				StringTokenizer tokenizer = new StringTokenizer(line, ",");
 				if (tokenizer.hasMoreTokens()) {
-					Geometry geometry = GeometryEngine.geometryFromWkt(line, 0, Type.Point);
+					String wkt = tokenizer.nextToken();
+					if (wkt.startsWith("\"")) {
+						wkt = wkt.substring(1);
+					}
+					if (wkt.endsWith("\"")) {
+						wkt = wkt.substring(0, wkt.length() - 1);
+					}
+					Geometry geometry = GeometryEngine.geometryFromWkt(wkt, 0, Type.Point);
 					shape = new ShapeWritable(geometry);
 				} else {
 					logger.warn(String.format("'%s' cannot not be converted to a point geometry!", line));

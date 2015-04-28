@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -24,6 +25,8 @@ public class App {
 		inputJob.setJarByClass(App.class);
 		inputJob.setInputFormatClass(WellKnownTextFileInputFormat.class);
 		inputJob.setMapperClass(GeometryTypeMapper.class);
+		inputJob.setMapOutputKeyClass(IntWritable.class);
+		inputJob.setMapOutputValueClass(ShapeWritable.class);
 		
 		FileInputFormat.setInputPaths(inputJob, "/input/custom-input");
 		UUID uniqueId = UUID.randomUUID();
