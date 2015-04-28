@@ -1,6 +1,7 @@
 package edu.hadoop.gis.samples.inputformat;
 
 import java.io.IOException;
+import java.util.StringTokenizer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -16,6 +17,8 @@ import com.esri.core.geometry.GeometryEngine;
 
 /**
  * Read well known text line by line and emit those records as shape binary.
+ * The well known text can be produced using GDAL:
+ * ogr2ogr -f CSV points.csv points.shp -lco GEOMETRY=AS_WKT
  * 
  * @author Jan Tschada
  *
@@ -24,6 +27,8 @@ public class WellKnownTextRecordReader extends RecordReader<LongWritable, ShapeW
 
 	private LineRecordReader lineRecordReader;
 	private ShapeWritable shape;
+	
+	private static final ShapeWritable nullShape = new ShapeWritable();
 	
 	private final Log logger;
 	
@@ -44,10 +49,15 @@ public class WellKnownTextRecordReader extends RecordReader<LongWritable, ShapeW
 		}
 		
 		String line = lineRecordReader.getCurrentValue().toString();
-		if (line.startsWith("POINT")) {
+		if (line.startsWith("\"POINT")) {
 			try {
-				Geometry geometry = GeometryEngine.geometryFromWkt(line, 0, Type.Point);
-				shape = new ShapeWritable(geometry);
+				StringTokenizer tokenizer = new StringTokenizer(line, ",");
+				if (tokenizer.hasMoreTokens()) {
+					Geometry geometry = GeometryEngine.geometryFromWkt(line, 0, Type.Point);
+					shape = new ShapeWritable(geometry);
+				} else {
+					logger.warn(String.format("'%s' cannot not be converted to a point geometry!", line));
+				}
 			} catch (Exception ex) {
 				logger.error("Converting the well known text failed!", ex);
 			}
@@ -62,7 +72,8 @@ public class WellKnownTextRecordReader extends RecordReader<LongWritable, ShapeW
 
 	@Override
 	public ShapeWritable getCurrentValue() throws IOException, InterruptedException {
-		return shape;
+		// Never return null in here!
+		return (null != shape) ? shape : nullShape;
 	}
 	
 	@Override
