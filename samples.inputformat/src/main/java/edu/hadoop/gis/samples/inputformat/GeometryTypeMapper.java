@@ -9,6 +9,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import com.esri.core.geometry.Geometry;
+import com.esri.core.geometry.Geometry.Type;
 
 /**
  * Maps shapes by their geometry types.
@@ -35,9 +36,12 @@ public class GeometryTypeMapper extends Mapper<LongWritable, ShapeWritable, IntW
 			return;
 		}
 		
-		switch (geometry.getType()) {
+		Type type = geometry.getType();
+		switch (type) {
 		case Point:
-			geometryType.set(1);
+		case Polyline:
+		case Polygon:
+			geometryType.set(type.value());
 			context.write(geometryType, value);
 			break;
 		default:

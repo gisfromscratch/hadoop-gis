@@ -27,6 +27,7 @@ public class WellKnownTextRecordReader extends RecordReader<LongWritable, ShapeW
 
 	private LineRecordReader lineRecordReader;
 	private ShapeWritable shape;
+	private static final int DefaultWkt = 0;	
 	
 	private static final ShapeWritable nullShape = new ShapeWritable();
 	
@@ -49,27 +50,39 @@ public class WellKnownTextRecordReader extends RecordReader<LongWritable, ShapeW
 		}
 		
 		String line = lineRecordReader.getCurrentValue().toString();
+		parseRecord(line);
+		return true;
+	}
+
+	void parseRecord(String line) {
+		Type geometryType = Type.Unknown;
 		if (line.startsWith("\"POINT")) {
+			geometryType = Type.Point;
+		} else if (line.startsWith("\"LINESTRING") || line.startsWith("\"MULTILINESTRING")) {
+			geometryType = Type.Polyline;
+		} else if (line.startsWith("\"POLYGON") || line.startsWith("\"MULTILINESTRING")) {
+			geometryType = Type.Polygon;
+		}
+		
+		if (Type.Unknown != geometryType) {
 			try {
-				StringTokenizer tokenizer = new StringTokenizer(line, ",");
-				if (tokenizer.hasMoreTokens()) {
-					String wkt = tokenizer.nextToken();
-					if (wkt.startsWith("\"")) {
-						wkt = wkt.substring(1);
+				int wktStartIndex = line.indexOf("\"");
+				int wktEndIndex = line.indexOf("\"", wktStartIndex + 1);
+				if (-1 != wktStartIndex && -1 != wktEndIndex) {
+					String wkt = line.substring(wktStartIndex + 1, wktEndIndex);
+					try {
+						Geometry geometry = GeometryEngine.geometryFromWkt(wkt, DefaultWkt, geometryType);
+						shape = new ShapeWritable(geometry);
+					} catch (Exception ex) {
+						logger.error(String.format("Converting the well known text '%s' failed!", wkt), ex);
 					}
-					if (wkt.endsWith("\"")) {
-						wkt = wkt.substring(0, wkt.length() - 1);
-					}
-					Geometry geometry = GeometryEngine.geometryFromWkt(wkt, 0, Type.Point);
-					shape = new ShapeWritable(geometry);
 				} else {
-					logger.warn(String.format("'%s' cannot not be converted to a point geometry!", line));
+					logger.warn(String.format("'%s' cannot not be converted to a known geometry!", line));
 				}
 			} catch (Exception ex) {
-				logger.error("Converting the well known text failed!", ex);
+				logger.error(String.format("Converting the well known text of line '%s' failed!", line), ex);
 			}
 		}
-		return true;
 	}
 	
 	@Override

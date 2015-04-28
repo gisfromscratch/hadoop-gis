@@ -11,6 +11,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
 
 import com.esri.core.geometry.Geometry;
+import com.esri.core.geometry.Geometry.GeometryType;
 import com.esri.core.geometry.Geometry.Type;
 import com.esri.core.geometry.GeometryEngine;
 
@@ -26,7 +27,7 @@ public class ShapeWritable implements Writable {
 	private IntWritable bytesLength;
 	private BytesWritable shape;
 	
-	private final static int DefaultWkt = 0;
+	private static final int DefaultWkt = 0;
 
 	private final Log logger;
 
@@ -64,9 +65,12 @@ public class ShapeWritable implements Writable {
 			shape.set(new BytesWritable());
 		} else {
 			try {
-				switch (geometry.getType()) {
+				Type type = geometry.getType();
+				switch (type) {
 				case Point:
-					geometryType.set(1);
+				case Polyline:
+				case Polygon:
+					geometryType.set(type.value());
 					byte[] bytes = GeometryEngine.geometryToEsriShape(geometry);
 					bytesLength.set(bytes.length);
 					shape.set(new BytesWritable(bytes));
@@ -86,8 +90,12 @@ public class ShapeWritable implements Writable {
 		if (0 < bytesLength.get()) {
 			try {
 				switch (geometryType.get()) {
-				case 1:
+				case GeometryType.Point:
 					return GeometryEngine.geometryFromEsriShape(shape.getBytes(), Type.Point);
+				case GeometryType.Polyline:
+					return GeometryEngine.geometryFromEsriShape(shape.getBytes(), Type.Polyline);
+				case GeometryType.Polygon:
+					return GeometryEngine.geometryFromEsriShape(shape.getBytes(), Type.Polygon);
 				}
 			} catch (Exception ex) {
 				logger.error("Converting the geometry failed!");
