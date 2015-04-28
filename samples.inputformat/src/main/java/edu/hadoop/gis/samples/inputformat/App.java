@@ -1,6 +1,8 @@
 package edu.hadoop.gis.samples.inputformat;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
 
 import org.apache.hadoop.conf.Configuration;
@@ -29,8 +31,10 @@ public class App {
 		inputJob.setMapOutputValueClass(ShapeWritable.class);
 		
 		FileInputFormat.setInputPaths(inputJob, "/input/custom-input");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyy-MM-dd'T'HHmmss");
 		UUID uniqueId = UUID.randomUUID();
-		FileOutputFormat.setOutputPath(inputJob, new Path("/output", uniqueId.toString()));
+		String folderName = String.format("%s-%s", dateFormat.format(new Date()), uniqueId.toString());
+		FileOutputFormat.setOutputPath(inputJob, new Path("/output", folderName));
 		System.exit(inputJob.waitForCompletion(true) ? 0 : 1);
 	}
 }
