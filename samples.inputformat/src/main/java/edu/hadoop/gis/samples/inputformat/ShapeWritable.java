@@ -43,6 +43,7 @@ public class ShapeWritable implements Writable {
 
 	public void write(DataOutput out) throws IOException {
 		out.writeInt(geometryType.get());
+		out.write(bytesLength.get());
 		out.write(shape.getBytes());
 	}
 
