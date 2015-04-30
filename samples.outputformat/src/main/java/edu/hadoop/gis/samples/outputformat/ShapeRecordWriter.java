@@ -10,9 +10,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import com.esri.core.geometry.Envelope;
 import com.esri.core.geometry.Geometry;
@@ -21,27 +21,27 @@ import com.esri.core.geometry.Geometry.GeometryType;
 import edu.hadoop.gis.samples.inputformat.ShapeWritable;
 
 /**
- * Writes shapes directly into the filesystem.
+ * Writes shapes directly into the filesystem. Supports API level v1 and v2.
  * 
  * @author Jan Tschada
  *
  */
-public class ShapeRecordWriter extends RecordWriter<IntWritable, List<ShapeWritable>> {
+public class ShapeRecordWriter extends RecordWriter<IntWritable, List<ShapeWritable>> implements org.apache.hadoop.mapred.RecordWriter<IntWritable, List<ShapeWritable>> {
 
 	private final DataOutputStream boundingBoxOutputStream;
 	private final Envelope boundingBox;
 	private final Envelope queryEnvelope;
-	private final TaskAttemptContext context;
+	private final FileSystemOutput fileSystemOutput;
 	private final Map<IntWritable, DataOutputStream> outputStreams;
 
 	private final Log logger;
 
-	public ShapeRecordWriter(DataOutputStream boundingBoxOutputStream, TaskAttemptContext context) {
+	public ShapeRecordWriter(DataOutputStream boundingBoxOutputStream, FileSystemOutput fileSystemOutput) {
 		logger = LogFactory.getLog(getClass());
 		this.boundingBoxOutputStream = boundingBoxOutputStream;
 		boundingBox = new Envelope();
 		queryEnvelope = new Envelope();
-		this.context = context;
+		this.fileSystemOutput = fileSystemOutput;
 		outputStreams = new java.util.HashMap<IntWritable, DataOutputStream>();
 	}
 
@@ -87,10 +87,10 @@ public class ShapeRecordWriter extends RecordWriter<IntWritable, List<ShapeWrita
 			return null;
 		}
 
-		Path outputPath = FileOutputFormat.getOutputPath(context);
+		Path outputPath = fileSystemOutput.getOutputPath();
 		Path layerOutputPath = new Path(outputPath, fileName);
 		try {
-			FileSystem fileSystem = FileSystem.get(context.getConfiguration());
+			FileSystem fileSystem = fileSystemOutput.getFileSystem();
 			return fileSystem.create(layerOutputPath);
 		} catch (IOException ex) {
 			logger.error("Creating layer file failed!", ex);
@@ -98,7 +98,32 @@ public class ShapeRecordWriter extends RecordWriter<IntWritable, List<ShapeWrita
 		}
 	}
 
+	/**
+	 * Closing the underyling stream using v1 level API.
+	 */
 	public void close(TaskAttemptContext context) throws IOException {
+		for (DataOutputStream outputStream : outputStreams.values()) {
+			try {
+				outputStream.close();
+			} catch (IOException ex) {
+				logger.error("Closing layer file failed!", ex);
+			}
+		}
+
+		try {
+			String boundingBoxAsJson = String.format("{ \"xmin\" : %f, \"ymin\" : %f, \"xmax\" : %f, \"ymax\" : %f }", boundingBox.getXMin(), boundingBox.getYMin(), boundingBox.getXMax(),
+					boundingBox.getYMax());
+			boundingBoxOutputStream.writeUTF(boundingBoxAsJson);
+			boundingBoxOutputStream.close();
+		} catch (IOException ex) {
+			logger.error("Closing the *.bbox file failed!");
+		}
+	}
+
+	/**
+	 * Closing the underlying stream using v2 level API.
+	 */
+	public void close(Reporter reporter) throws IOException {
 		for (DataOutputStream outputStream : outputStreams.values()) {
 			try {
 				outputStream.close();
