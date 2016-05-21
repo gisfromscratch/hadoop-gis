@@ -10,7 +10,7 @@ import java.util.List;
 public interface ProjectionEngine {
 
 	/**
-	 * Constructs point on along the geodesic arc.
+	 * Constructs points along a geodesic arc.
 	 * @param fromPoint the start point.
 	 * @param azimuthInDegree the azimuth.
 	 * @param distanceInMeters the distance in meters.
@@ -18,4 +18,13 @@ public interface ProjectionEngine {
 	 * @return the points along the geodesic arc.
 	 */
 	List<WGS84Point> constructGeodesicPoints(WGS84Point fromPoint, double azimuthInDegree, double distanceInMeters, double segmentLength);
+	
+	/**
+	 * Constructs points along a geodesic arc.
+	 * @param fromPoint the start point.
+	 * @param toPoint the end point.
+	 * @param segmentLength the length of each segment.
+	 * @return the points along the geodesic arc.
+	 */
+	List<WGS84Point> constructGeodesicPoints(WGS84Point fromPoint, WGS84Point toPoint, double segmentLength);
 }

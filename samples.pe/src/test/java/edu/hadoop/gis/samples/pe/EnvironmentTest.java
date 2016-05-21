@@ -37,4 +37,16 @@ public class EnvironmentTest extends TestCase {
 		assertNotNull("The points must not be null!", points);
 		assertEquals("The number of points is invalid!", 6, points.size()); 
 	}
+	
+	/**
+	 * Tests the initialization and construction.
+	 */
+	public void testGeodesicInverseLine() {
+		ProjectionEngine engine = ProjectionEngineEnvironment.initialize();
+		WGS84Point fromPoint = new WGS84Point(14.9, 24.1);
+		WGS84Point toPoint = new WGS84Point(15.3, 23.57);
+		List<WGS84Point> points = engine.constructGeodesicPoints(fromPoint, toPoint, 5000);
+		assertNotNull("The points must not be null!", points);
+		assertTrue("The points must not be empty!", 0 < points.size()); 
+	}
 }
