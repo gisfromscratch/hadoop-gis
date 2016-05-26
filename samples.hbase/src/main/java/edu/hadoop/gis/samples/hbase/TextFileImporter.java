@@ -4,13 +4,15 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 /**
  * Imports text file directly into HBase using the client API.
@@ -20,9 +22,20 @@ import org.apache.hadoop.hbase.util.Bytes;
  */
 public class TextFileImporter {
 
+	private final Logger logger;
+
 	private final File inputFile;
+
 	private final TextFileSchema schema;
 
+	/**
+	 * Creates a new importer.
+	 * 
+	 * @param inputFile
+	 *            the file which should be imported.
+	 * @param schema
+	 *            the schema of the file specified.
+	 */
 	public TextFileImporter(File inputFile, TextFileSchema schema) {
 		if (null == inputFile) {
 			throw new IllegalArgumentException("The file must not be null!");
@@ -34,11 +47,16 @@ public class TextFileImporter {
 			throw new IllegalArgumentException("The schema must not be null!");
 		}
 
+		this.logger = LogManager.getLogger(getClass());
 		this.inputFile = inputFile;
 		this.schema = schema;
 	}
 
-	public void importInto(HBaseTableConfiguration tableConfiguration, String columnFamily) throws IOException {
+	public void importInto(HBaseTableImportConfiguration importConfiguration) throws IOException, InterruptedException {
+		if (null == importConfiguration) {
+			throw new IllegalArgumentException("The configuration must not be null!");
+		}
+
 		LineNumberReader reader = new LineNumberReader(new FileReader(inputFile));
 		try {
 			String line;
@@ -62,33 +80,63 @@ public class TextFileImporter {
 			}
 
 			// Put data into the table
+			HBaseTableConfiguration tableConfiguration = importConfiguration.getConfiguration();
 			HTable table = new HTable(tableConfiguration.getConfiguration(), tableConfiguration.getTableName());
 			try {
+				String columnFamily = importConfiguration.getColumnFamily();
 				byte[] columnFamilyAsBytes = Bytes.toBytes(columnFamily);
+
+				// Doing bulk inserts
+				int autoCommitSize = importConfiguration.getAutoCommitSize();
+				if (0 < autoCommitSize) {
+					autoCommitSize = 1;
+				}
+				List<Put> puts = new ArrayList<Put>(autoCommitSize);
+				Object[] results = new Object[autoCommitSize];
+
 				while (null != (line = reader.readLine())) {
 					// Create the put using the line number
 					Put recordPut = new Put(Bytes.toBytes(reader.getLineNumber()));
-					
+
 					String[] splittedLine = line.split(schema.getDelimiter());
 					for (int tokenIndex = 0, tokenCount = splittedLine.length; tokenIndex < tokenCount; tokenIndex++) {
 						if (fields.containsKey(tokenIndex)) {
 							// Get the field using the token index
 							TextFileField field = fields.get(tokenIndex);
 							String value = splittedLine[tokenIndex];
-							
+
 							// Put the next value
 							recordPut.add(columnFamilyAsBytes, Bytes.toBytes(field.getName()), Bytes.toBytes(value));
 						}
 					}
-					
-					// Put the record into the table
-					table.put(recordPut);
+
+					puts.add(recordPut);
+					if (puts.size() == autoCommitSize) {
+						// Put the records into the table
+						batchInsert(table, puts, results);
+					}
+				}
+				
+				// Check if there are still uncommitted puts available
+				if (!puts.isEmpty()) {
+					// Put the records into the table
+					batchInsert(table, puts, results);
 				}
 			} finally {
 				table.close();
 			}
 		} finally {
 			reader.close();
+		}
+	}
+
+	private void batchInsert(HTable table, List<Put> puts, Object[] results) throws IOException, InterruptedException {
+		try {
+			table.batch(puts, results);
+			puts.clear();
+		} catch (InterruptedException e) {
+			logger.error("Batch insert failed!", e);
+			throw e;
 		}
 	}
 }

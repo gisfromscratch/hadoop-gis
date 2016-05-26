@@ -12,11 +12,13 @@ import junit.framework.TestCase;
  */
 public class ImportTextFileTest extends TestCase {
 
-	public void testFileImport() throws IOException {
+	public void testFileImport() throws IOException, InterruptedException {
 		TextFileSchema schema = new TextFileSchema(true, "\t");
 		File inputFile = new File(getClass().getClassLoader().getResource("aa.txt").getFile());
 		TextFileImporter importer = new TextFileImporter(inputFile, schema);
-		HBaseTableConfiguration configuration = new HBaseTableConfiguration("<>", "<>", "geonames");
-		importer.importInto(configuration, "fields");
+		HBaseTableConfiguration tableConfiguration = HBaseTableConfiguration.createFromEnvironment("geonames");
+		final int autoCommitSize = 1000;
+		HBaseTableImportConfiguration importConfiguration = new HBaseTableImportConfiguration(tableConfiguration, "fields", autoCommitSize);
+		importer.importInto(importConfiguration);
 	}
 }
