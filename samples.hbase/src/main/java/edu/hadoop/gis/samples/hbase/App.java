@@ -2,6 +2,9 @@ package edu.hadoop.gis.samples.hbase;
 
 import java.io.File;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 /**
  * Simple HBase client for importing text files into HBase tables.
  * 
@@ -9,6 +12,12 @@ import java.io.File;
  *
  */
 public class App {
+	
+	private static Logger logger;
+	
+	static {
+		logger = LogManager.getLogger(App.class);
+	}
 
 	public static void main(String[] args) {
 		File inputFile = null;
@@ -29,6 +38,9 @@ public class App {
 					break;
 				case TableName:
 					tableName = arg;
+					break;
+				default:
+					logger.warn("Unknown application argument!");
 					break;
 				}
 			}
