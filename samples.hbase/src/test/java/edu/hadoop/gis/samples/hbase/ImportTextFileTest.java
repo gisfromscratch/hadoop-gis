@@ -16,6 +16,7 @@ public class ImportTextFileTest extends TestCase {
 		TextFileSchema schema = new TextFileSchema(true, "\t");
 		File inputFile = new File(getClass().getClassLoader().getResource("aa.txt").getFile());
 		TextFileImporter importer = new TextFileImporter(inputFile, schema);
-		importer.importInto("AA");
+		HBaseTableConfiguration configuration = new HBaseTableConfiguration("<>", "<>", "geonames");
+		importer.importInto(configuration, "fields");
 	}
 }
